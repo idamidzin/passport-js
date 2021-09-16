@@ -1,23 +1,38 @@
 const { User } = require('../models');
 const generateToken = require('../helper/common');
 
-const login = async function(req, res, next) {
+const login = async (req, res) => {
     let findUser = await User.findOne({
         where : { email : req.body.email }
     });
-    
 
     if (!findUser) {
-        return res.status(400).send('User not found!');
+        return res.status(400).send({
+            message: "User not found!"
+        });
     }
 
     let token = generateToken(25);
 
-    const userLogin = User.update({ token : token}, {
-        where : { email: req.body.email }
+    let userUpdate = await User.update({ token : token}, {
+        where : { id: findUser.id }
     });
 
-    return res.status(200).send({token, email: req.body.email});
+    if(userUpdate){
+        return res.status(200).send({
+            message: "Login Successfully!",
+            user: {
+                token,
+                email: findUser.email,
+                name: findUser.name
+            }
+        });
+    }else{
+        return res.status(400).send({
+            message: "Update failed!"
+        });
+    }
+
 }
 
 module.exports = {
