@@ -3,8 +3,15 @@ const path = require('path');
 const http = require("http");
 const cookieParser = require('cookie-parser');
 const passport = require('./app/middleware');
+const Octopus = require('@usetada/octopus');
+const octopus = Octopus();
+const NSQ = octopus.NSQ({
+    NSQLookup: [
+        '127.0.0.1:4161'
+    ]
+});
 
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 8015;
 
 const app = express();
 const server = http.createServer(app);
@@ -30,6 +37,13 @@ app.use(function(err, req, res, next) {
     res.locals.error = req.app.get('env') === 'development' ? err : {};
     res.status(err.status || 500).send({ error: err.toString() });
     res.send('res', res.status);
+});
+
+NSQ.Subscribe({ topic: 'MSG_ACTION', channel: 'MSG_ACTION_CHANNEL',
+    processFn: msg => {
+      console.log('Received msg:', msg.json());
+    },
+    msgConfig: { autofinish: false },
 });
 
 server.listen(port, function () {
